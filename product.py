@@ -209,6 +209,15 @@ def order_add(id:int,quantity:int,FALSE:bool)->None:
         cur.execute(query,(id,quantity,FALSE))
         conn.commit()
                 
+def fetch_all_product()->tuple:
+    
+    """This function is fetch name ,id and quantity of products from products table"""
+
+    with db_connection() as conn:
+        cur = conn.cursor()
+        query = """SELECT * FROM products"""
+        cur.execute(query)
+        return cur.fetchall()
 
 def create_order(name:str,quantity:int)->bool | None:
     """This function is for create order from name and 
@@ -227,7 +236,7 @@ def create_order(name:str,quantity:int)->bool | None:
     #extract product name and quantity
     
         
-    rows = fetch_products()
+    rows = fetch_all_product()
     counter=0
     for data in rows:
         if (data[1] == name):
