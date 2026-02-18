@@ -1,70 +1,28 @@
-from conn_ext import cur,conn
+from conn_ext import db_connection
+
+def fetch_daily_summary()->tuple:
+    """This functions fetches productname, quantity and sum of price and quantity of daily
+    order as per the current date."""
+
+    with db_connection() as conn:
+        cur = conn.cursor()
+        cur.execute("""SELECT p.name, o.quantity, SUM(p.price * o.quantity) AS revenue
+            FROM orders o
+            JOIN products p ON p.product_id = o.product_id 
+            WHERE o.is_delete = FALSE AND o.purchase_date = CURRENT_DATE
+            GROUP BY p.name, o.quantity
+            """)
+        return cur.fetchall()
 
 
-def create_order(name:str,quantity:int)->None:
 
-    """This function is for create order from name and 
-    quantity of product. It checks existing stock and then confirm the 
-    order."""
-
-    #extract product name and quantity
-    cur.execute("SELECT * FROM products")
-    rows = cur.fetchall()
-    counter=0
-    for data in rows:
-        if (data[1] == name):
-            counter+=1
-            #cheack the quantity
-            if(data[3] >= quantity) :
-                
-                #update the quantity after order
-                query = """UPDATE products 
-                SET quantity = %s 
-                WHERE name = %s"""
-                
-                cur.execute(query,(data[3]-quantity,name))
-
-                query = """INSERT INTO orders(product_id, quantity,is_delete) 
-                VALUES(%s,%s,%s)"""
-
-                cur.execute(query,(data[0],quantity,False))
-                conn.commit()
-                
-                print("++++++++++++++++++++++++")
-                print("Order is Confirm!")
-                print("++++++++++++++++++++++++")
-
-            #if no quantity is sufficient
-            else:
-                print("++++++++++++++++++++++++")
-                print("Quantity is not sufficient!")
-                print("++++++++++++++++++++++++")
-                
-                return False
-    #if no product name match
-    if (counter == 0):
-        print("++++++++++++++++++++++++")
-        print("Product is not available")
-        print("++++++++++++++++++++++++")
-        
-
-        return False
+def daily_summary()->None | bool:
+    """This function gave the daily order summary
+    
+    retuns:It retuns false if no daily summary."""
 
     
-
-
-def daily_summary()->None:
-
-    """This function gave the daily order summary"""
-
-    cur.execute("""SELECT p.name, o.quantity, SUM(p.price * o.quantity) AS revenue
-        FROM orders o
-        JOIN products p ON p.product_id = o.product_id 
-        WHERE o.is_delete = FALSE AND o.purchase_date = CURRENT_DATE
-        GROUP BY p.name, o.quantity
-        """)
-    
-    rows = cur.fetchall()
+    rows = fetch_daily_summary()
     #if no data in day
     if len(rows) == 0:
         print("******************")
@@ -84,25 +42,35 @@ def daily_summary()->None:
     print("==================================")
     
 
+def fetch_supplier_purchase()->tuple:
+    """This function fetches supplier name, product name,
+    number of purchases from supplier and sum of total quantity we purchase."""
+
+    with db_connection() as conn:
+        cur = conn.cursor()
+
+        query = """SELECT s.name ,pro.name, COUNT(pro.name), SUM(p.quantity)
+                FROM suppliers s
+                JOIN purchases p ON s.supplier_id = p.supplier_id
+                JOIN products pro ON p.product_id = pro.product_id
+                GROUP BY s.name, pro.name
+                """
+        
+        
+        cur.execute(query)
+        return cur.fetchall()
 
 
-def supplier_purchase()->None:
-
-    """This function is give the summary of all supplier and 
-    which supplier total trasaction and total units supplies"""
-
-
-    query = """SELECT s.name ,pro.name, COUNT(pro.name), SUM(p.quantity)
-            FROM suppliers s
-            JOIN purchases p ON s.supplier_id = p.supplier_id
-            JOIN products pro ON p.product_id = pro.product_id
-            GROUP BY s.name, pro.name
-            """
+def supplier_purchase()->None | bool:
+    """This function is give the summary of all supplier.
+     
+    This function calls the diffrent functions as per needs and 
+    gave the total trasaction and total units supplies
     
-    
-    cur.execute(query)
-    
-    rows = cur.fetchall()
+    retuns: It retuns false if the no data found.
+    """
+
+    rows = fetch_supplier_purchase()
     #if not purchases availble
 
     if len(rows) == 0:
@@ -119,43 +87,73 @@ def supplier_purchase()->None:
 
     print("=========================================================")
 
+def fetch_products()->tuple:
+    """This function fetch name,quantity and price from products.
+    
+    return: Tuple of the name,quantity and price
+    
+    """
+    with db_connection() as conn:
+        cur = conn.cursor()
+
+        query = """SELECT name,quantity,price FROM products"""
+
+        cur.execute(query)
+        return cur.fetchall()
+
 def show_products()->None:
     """This Function is showing alailble stock after
     purchases. It shows updated stock after purchased new stock"""
 
-    query = """SELECT name,quantity,price FROM products"""
-
-    cur.execute(query)
-    rows = cur.fetchall()
+    
+    rows = fetch_products()
     #print the products
     print("========================================================")
     print("Product name || Quantity || Price per unit")
     for data in rows:
         print(f"{data[0]}   ||   {data[1]}      ||     {data[2]} ")
 
+def extract_olderdata()->tuple:
+    """This function Extract the older data from order grater then 30 days."""
+    with db_connection() as conn:
+        cur = conn.cursor()
+
+        query = """SELECT purchase_date - CURRENT_DATE  , order_id
+                FROM orders
+                """
+        
+        cur.execute(query)
+        return cur.fetchall()
+
+def update_olderdata(order_id)->None:
+    """This function update the data.
+    Args:
+        order_id:It update the data is_delete=true when matches the order id.
+    """
+    with db_connection() as conn:
+        cur = conn.cursor()
+        query = """UPDATE orders 
+            SET is_delete = TRUE 
+            WHERE order_id = %s"""
+    
+        cur.execute(query,(order_id))
+        conn.commit()
+
 
 def set_database()->None:
-
     """This Function set the database with softdelete 
-    more then 30 days older orders"""
-
-    query = """SELECT purchase_date - CURRENT_DATE  , order_id
-            FROM orders
-            """
+    more then 30 days older orders
     
-    cur.execute(query)
-    
+    It call the different functions and perform as per requriements."""
+  
     #if date is older then 30 then soft delete the data
-    rows = cur.fetchall()
+    rows = extract_olderdata()
     for data in rows:
         if (data[0]> 30):
             order_id = data[1]
+            update_olderdata(order_id)
 
-            query = """UPDATE orders 
-            SET is_delete = TRUE 
-            WHERE name = %s"""
-    
-            cur.execute(query,(order_id))
+            
 
     
 

@@ -1,20 +1,30 @@
 import psycopg2
+import os
+from dotenv import load_dotenv
+load_dotenv()
+from contextlib import contextmanager
 
-#for database connection
-DB_NAME = "inventorysystem"
-DB_USER = "postgres"
-DB_PASS = "123456"
-DB_HOST = "localhost"
-DB_PORT = "5432"
+@contextmanager
 
-conn = psycopg2.connect(database=DB_NAME,
-                        user=DB_USER,
-                        password=DB_PASS,
-                        host=DB_HOST,
-                        port=DB_PORT)
+def db_connection():
+    try:
+        conn = psycopg2.connect(database=os.getenv("DB_NAME"),
+                            user=os.getenv('DB_USER'),
+                            password=os.getenv('DB_PASS'),
+                            host=os.getenv('DB_HOST'),
+                            port=os.getenv('DB_PORT'))
+    
+        yield conn
+        
+    except Exception as e:
+        if conn:
+            conn.rollback()
+    finally:
+        if conn:
+            conn.close()
+    
+    
 
-cur = conn.cursor()
 
-print("Database connected!")
 
     

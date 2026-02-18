@@ -1,10 +1,10 @@
-from product import add_product
+from product import add_product,create_order
 from inventory_system import create_inventorysys
 from supplier import add_supplier
 from add_purchase import purchase_product
-from operations import create_order,daily_summary,supplier_purchase,set_database,show_products
+from operations import daily_summary,supplier_purchase,set_database,show_products
 import logging
-from conn_ext import conn
+
 
 logger = logging.getLogger("SimpleLogger")
 logger.setLevel(logging.DEBUG)
@@ -36,49 +36,42 @@ def main():
     print("8.Exit the system")
     print("=====================================")
 
-    try:
-        choice = int(input("Enter Choice: "))
-
-        if not choice or choice=="" or choice <= 0:
-            print("++++++++++++++++++++++++")
-            print("Please enter the  proper choice!")
-            print("++++++++++++++++++++++++")
-            main()
-    except TypeError:
-        logger.error("This is a Type error %s",TypeError)
-        print("++++++++++++++++++++++++")
-        print("Wrong Choice Entered!")
-        print("++++++++++++++++++++++++")
-        main()
-    except Exception as e:
-        logger.error("This is an Unexpected error %s",e)
-        print("++++++++++++++++++++++++")
-        print("Wrong Choice Entered!")
-        print("++++++++++++++++++++++++")
-        main()
- 
-    if choice == 1:
+    while True:
 
         try:
+            choice = int(input("Enter Choice: "))
+            break
+        except Exception as e:
+            print("Wrong Choice Entered!")
+            logger.error("Wrong Choice")
+        
  
-            name = input("Enter product name: ")
+    if choice == 1:
+        input_active = True
 
-            if (not name or name.strip()=="" or name.isnumeric()==True):
-                print("++++++++++++++++++++++++")
-                print("Empty product or price not allowed!")
-                print("++++++++++++++++++++++++")
-                logger.error("Name and Price of product not entered")
+        while input_active:
+
+            try:
+                name = input("Enter product name: ")
+
+                if (name.strip()=="" or name.isnumeric()):
+                    input_active = True
+                else:
+                    input_active=False
+
+            except Exception as e:
+                print("Wrong input Entered!")
+                logger.error("Wrong Choice")
+
+        try:
+
+            add = add_product(name)
+        
+
+            if add == False:
                 main()
-
-            else:
-
-                add = add_product(name)
-            
-
-                if add == False:
-                    main()
-           
-                main()
+        
+            main()
 
 
         except TypeError:
@@ -88,7 +81,7 @@ def main():
             print("++++++++++++++++++++++++")
             main()
         except Exception as e:
-            logger.error("This is an Unexpected error %s",e)
+            logger.exception("This is an Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Error",e)
             print("++++++++++++++++++++++++")
@@ -96,26 +89,30 @@ def main():
         
 
     elif choice == 2:
+        input_active = True
 
+        while input_active:
+
+            try:
+
+                name = input("Enter Supplier name: ")
+
+                if (name.strip()=="" or name.isnumeric()):
+                    input_active = True
+                else:
+                    input_active=False
+
+            except Exception as e:
+                print("Wrong input Entered!")
+                logger.error("Wrong input entered")
+            
         try:
-
-            name = input("Enter Supplier name: ")
-
-            if (not name or name.strip()=="" or name.isnumeric()==True):
-
-                print("++++++++++++++++++++++++")
-                print("Supplier name is not Allowed!")
-                print("++++++++++++++++++++++++")
-                
+            supplier = add_supplier(name)
+            
+            if supplier == False:
                 main()
             
-            else:
-                supplier = add_supplier(name)
-                
-                if supplier == False:
-                    main()
-                
-                main()
+            main()
 
         
         except TypeError as e:
@@ -125,7 +122,7 @@ def main():
             print("++++++++++++++++++++++++")
             main()
         except Exception as e:
-            logger.error("This is an Unexpected error %s",e)
+            logger.exception("This is an Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Error",e)
             print("++++++++++++++++++++++++")
@@ -133,33 +130,39 @@ def main():
         
 
     elif choice == 3:
+        input_active = True
+
+        while input_active:
+
+            try:
+
+                name_of_product = input("Enter the product name: ")
+
+                name_of_supplier = input("Enter the supplier name: ")
+
+                quantity_of_product = int(input("Enter Quantity of product: "))
+
+            
+
+                if (name_of_product.strip()=="" or name_of_supplier.strip()=="" or quantity_of_product<=0
+                or name_of_product.isnumeric() or name_of_supplier.isnumeric()):
+                    input_active = True
+                else:
+                    input_active=False
+
+            except Exception as e:
+                print("Wrong Input Entered!")
+                logger.error("Wrong Input Entered")
 
         try:
 
-            name_of_product = input("Enter the product name: ")
-
-            name_of_supplier = input("Enter the supplier name: ")
-
-            quantity_of_product = int(input("Enter Quantity of product: "))
-
-            if (not name_of_product or not name_of_supplier or not quantity_of_product
-                or name_of_product.strip()=="" or name_of_supplier.strip=="" or quantity_of_product<=0
-                or name_of_product.isnumeric()==True or name_of_supplier.isnumeric()==True):
-
-                print("====================================")
-                print("You Don't Entered the value which needed!")
-                print("======================================")
-
-                main()
-            else:
-
-                purchase = purchase_product(name_of_product,name_of_supplier,quantity_of_product)
-                
-                if purchase == False:
-                    main()
-                
+            purchase = purchase_product(name_of_product,name_of_supplier,quantity_of_product)
+            
+            if purchase == False:
                 main()
             
+            main()
+        
 
         except ValueError:
             logger.error("This is a Type error %s",ValueError)
@@ -168,34 +171,42 @@ def main():
             print("++++++++++++++++++++++++")
             main()
         except Exception as e:
-            logger.error("This is an Unexpected error %s",e)
+            logger.exception("This is an Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Unexpected Error",e)
             print("++++++++++++++++++++++++")
             main()
 
     elif choice == 4:
+        input_active = True
+
+        while input_active:
+
+            try:
+
+                name = input("Enter product name: ")
+
+                quantity = int(input("Enter the product Quantity :"))
+
+                if (not name or not quantity or name.strip()=="" or quantity<=0 or name.isnumeric()==True):
+                    input_active = True
+                else:
+                    input_active=False
+
+            except Exception as e:
+                print("Wrong Choice Entered!")
+                logger.error("Wrong Choice")
 
         try:
 
-            name = input("Enter product name: ")
-
-            quantity = int(input("Enter the product Quantity :"))
-
-            if (not name or not quantity or name.strip()=="" or quantity<=0 or name.isnumeric()==True):
-                print("==============================")
-                print("Name or Quantity is invalid!")
-                print("==========================")
-                main()
-
-            else:
-                order = create_order(name,quantity)
             
+            order = create_order(name,quantity)
+        
 
-                if order == False:
-                    main()
-                
+            if order == False:
                 main()
+            
+            main()
         
         except TypeError:
             logger.error("This is a Type error %s",TypeError)
@@ -204,7 +215,7 @@ def main():
             print("++++++++++++++++++++++++")
             main()
         except Exception as e:
-            logger.error("Unexpected error %s",e)
+            logger.exception("Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Error",e)
             print("++++++++++++++++++++++++")
@@ -228,7 +239,7 @@ def main():
             print("++++++++++++++++++++++++")
             main()
         except Exception as e:
-            logger.error("Unexpected error %s",e)
+            logger.exception("Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Error",e)
             print("++++++++++++++++++++++++")
@@ -250,7 +261,7 @@ def main():
             print("++++++++++++++++++++++++")
             main()
         except Exception as e:
-            logger.error("This is an Unexpected error %s",e)
+            logger.exception("This is an Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Error ",e)
             print("++++++++++++++++++++++++")
@@ -261,7 +272,7 @@ def main():
             show_products()
             main()
         except Exception as e:
-            logger.error("This is an Unexpected error %s",e)
+            logger.exception("This is an Unexpected error %s",e)
             print("++++++++++++++++++++++++")
             print("Error ",e)
             print("++++++++++++++++++++++++")
@@ -269,9 +280,7 @@ def main():
 
 
     elif choice == 8:
-        if conn:
-            conn.close()
-            return
+        
         return
         
 

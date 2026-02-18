@@ -1,14 +1,51 @@
-from conn_ext import cur,conn
+from conn_ext import db_connection
 
-def purchase_product(name_of_product:str,name_of_supplier:str,quantity_of_product:int)-> None:
+def fetch_products():
+
+    with db_connection() as conn:
+        cur = conn.cursor()
+        query = """SELECT * FROM products"""
+        cur.execute(query)
+        return cur.fetchall()
+    
+def fetch_suppliers():
+
+        with db_connection() as conn:
+            cur = conn.cursor()
+            query = """SELECT * FROM suppliers"""
+            cur.execute(query)
+            return cur.fetchall()
+        
+def insert_purchase(supplier_id,product_id,quantity_of_product):
+
+        with db_connection() as conn:
+            cur = conn.cursor()
+            query = """INSERT INTO purchases(supplier_id,product_id,quantity) 
+                VALUES(%s,%s,%s)"""
+
+            cur.execute(query,(supplier_id,product_id,quantity_of_product))
+            conn.commit()
+
+def update_products(new_quantity, name_of_product):
+     
+     with db_connection() as conn:
+        cur = conn.cursor()
+        query = """UPDATE products 
+        SET quantity = %s 
+        WHERE name = %s"""
+        
+        cur.execute(query,(new_quantity, name_of_product))
+        conn.commit()
+ 
+def purchase_product(name_of_product:str,name_of_supplier:str,quantity_of_product:int)-> bool | None:
 
     """This function is used when new purchase.
     It extracts product_id and supplier_id from its name and
     update stock according to given data"""
 
     #select all things from product
-    cur.execute("SELECT * FROM products")
-    rows = cur.fetchall()
+    
+    rows = fetch_products()
     product=0
     for data in rows:
         #compare the product name
@@ -27,8 +64,8 @@ def purchase_product(name_of_product:str,name_of_supplier:str,quantity_of_produc
         return False
 
     #for supplier details    
-    cur.execute("SELECT * FROM suppliers")
-    rows = cur.fetchall()
+    
+    rows = fetch_suppliers()
     supplier=0
     for data in rows:
         #compare the name of supplier if exist
@@ -46,24 +83,20 @@ def purchase_product(name_of_product:str,name_of_supplier:str,quantity_of_produc
         return False
     
     #insert the data in purchases
-    query = """INSERT INTO purchases(supplier_id,product_id,quantity) 
-            VALUES(%s,%s,%s)"""
 
-    cur.execute(query,(supplier_id,product_id,quantity_of_product))
+    insert_purchase(supplier_id,product_id,quantity_of_product)
+    
 
     #update the products quantity
-    query = """UPDATE products 
-    SET quantity = %s 
-    WHERE name = %s"""
+    new_quantity = quantity+quantity_of_product
+    update_products(new_quantity, name_of_product)
     
-    cur.execute(query,(quantity+quantity_of_product, name_of_product))
-    conn.commit()
 
     print("++++++++++++++++++++++++")
     print("Added purchases successfully!")
     print("++++++++++++++++++++++++")
 
-   
+    
 
 
     
